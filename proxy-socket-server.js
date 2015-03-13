@@ -1,22 +1,27 @@
 var socket = require('socket.io');
-var Client = require('./client');
-var app = require('http').createServer();
 var WebSocket = require('ws');
+var http = require('http');
+
+var app = http.createServer();
 var io = socket.listen(app.listen(8080, 'localhost'));
+
 app.on('request', function (req, res) {
     res.statusCode = 404;
     res.end();
 });
+
 io.on('connection', function (socket) {
-    console.info('socket client connected');
+    var ws;
     socket.on('auth', function (params) {
+        var ws;
         try {
+            ws = new WebSocket('ws://192.168.5.3:8047');
             var tmpParams = JSON.parse(params);
-            var client = Client.getClient(this.id);
-            var ws = client.setSocket(new WebSocket('ws://192.168.5.3:8047'));
-            client.set('token', tmpParams.data.token);
             ws.on('message', function (message) {
+                var conn = socket;
+                console.log('ws on message id', conn.id);
                 socket.emit('message', message);
+                socket.emit('message', tmpParams.data.token);
             });
             ws.on('error', function (err) {
                 socket.emit('error', err);
@@ -28,13 +33,16 @@ io.on('connection', function (socket) {
                     console.log('ping');
                 }, 15000);
             });
+            ws.on('close', function () {
+                console.log('websocket closed', socket.id);
+            });
         } catch (error) {
             this.emit('error', error);
         }
     });
     socket.on('message', function (params) {
         try {
-            Client.getClient(this.id).getSocket().send(params);
+            ws.send(params);
         } catch (error) {
             this.emit('error', error);
         }
@@ -43,6 +51,10 @@ io.on('connection', function (socket) {
         this.emit(error);
     });
     socket.on('disconnect', function () {
-        console.log('client disconnected', this.id);
+        try {
+            ws.close();
+            console.log('client disconnected', this.id);
+        } catch (err) {
+        }
     });
 });
