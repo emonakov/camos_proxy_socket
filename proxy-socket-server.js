@@ -1,9 +1,10 @@
 var socket = require('socket.io');
 var WebSocket = require('ws');
 var http = require('http');
+var conf = require('./lib/config');
 
 var app = http.createServer();
-var io = socket.listen(app.listen(8080, 'localhost'));
+var io = socket.listen(app.listen(conf.get('port'), conf.get('host')));
 
 app.on('request', function (req, res) {
     res.statusCode = 404;
@@ -13,12 +14,11 @@ app.on('request', function (req, res) {
 io.on('connection', function (socket) {
     var ws;
     socket.on('auth', function (params) {
-        ws = new WebSocket('ws://192.168.5.3:8047');
+        ws = new WebSocket(conf.get('socket'));
         try {
             var tmpParams = JSON.parse(params);
             ws.on('message', function (message) {
                 var conn = socket;
-                console.log('ws on message id', conn.id);
                 socket.emit('message', message);
             });
             ws.on('error', function (err) {
@@ -28,7 +28,6 @@ io.on('connection', function (socket) {
                 ws.send(params);
                 var pingWsInterval = setInterval(function () {
                     ws.send('{"opt":"system.ping", "data":null}');
-                    console.log('ping');
                 }, 15000);
             });
         } catch (error) {
