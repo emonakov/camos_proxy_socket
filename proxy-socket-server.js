@@ -1,10 +1,13 @@
 var socket = require('socket.io');
 var WebSocket = require('ws');
-
+var app = require('http').createServer();
 var conf = require('./lib/config');
 
-var io = socket.listen(conf.get('port'), conf.get('host'));
-io.set('origins', '*:*');
+var io = socket.listen(app.listen(conf.get('port'), conf.get('host')));
+app.on('request', function (req, res) {
+    res.statusCode = 404;
+    res.end();
+});
 io.on('connection', function (socket) {
     var ws;
     socket.on('message', function (params) {
