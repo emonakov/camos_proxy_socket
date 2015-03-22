@@ -4,7 +4,7 @@ var WebSocket = require('ws');
 var conf = require('./lib/config');
 
 var io = socket.listen(conf.get('port'), conf.get('host'));
-
+io.set('origins', '*:*');
 io.on('connection', function (socket) {
     var ws;
     socket.on('message', function (params) {
